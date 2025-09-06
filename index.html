@@ -127,6 +127,20 @@
         const xLayer = { chainId: 196, name: 'X Layer mainnet', explorerUrl: 'https://www.okx.com/web3/explorer/xlayer', rpcUrl: 'https://rpc.xlayer.tech' };
         const resolverContractAddress = '0x323CE1459B33ad71c8997db945Bd690dF07166F0';
 
+        // 检查 Token ID 所有权
+        async function checkTokenOwnership(contractAddress, tokenId) {
+            const erc721Contract = new web3.eth.Contract([
+                {"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"ownerOf","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"}
+            ], contractAddress);
+            try {
+                const owner = await erc721Contract.methods.ownerOf(tokenId).call();
+                return owner.toLowerCase() === accounts[0].toLowerCase();
+            } catch (error) {
+                console.error("Ownership check failed:", error);
+                return false;
+            }
+        }
+
         async function connectWallet() {
             const status = document.getElementById('networkStatus');
             try {
@@ -219,6 +233,11 @@
                 section.classList.add('loading');
                 status.innerText = "正在检查域名状态...";
                 const contractAddress = contracts[selectedDomain].address;
+                const isOwned = await checkTokenOwnership(contractAddress, tokenId);
+                if (!isOwned) {
+                    status.innerText = "该地址不拥有对应的 Token ID";
+                    return;
+                }
                 const isResolved = await resolverContract.methods.isTokenResolved(contractAddress, tokenId).call();
                 if (isResolved) {
                     const resolution = await resolverContract.methods.getResolution(contractAddress, tokenId).call();
@@ -263,8 +282,14 @@
             }
             try {
                 section.classList.add('loading');
-                status.innerText = "正在设置 URL...";
+                status.innerText = "正在检查所有权...";
                 const contractAddress = contracts[selectedDomain].address;
+                const isOwned = await checkTokenOwnership(contractAddress, tokenId);
+                if (!isOwned) {
+                    status.innerText = "该地址不拥有对应的 Token ID";
+                    return;
+                }
+                status.innerText = "正在设置 URL...";
                 const gas = await resolverContract.methods.resolveUrl(contractAddress, tokenId, url).estimateGas({ from: accounts[0] }).catch(() => 600000);
                 const tx = await resolverContract.methods.resolveUrl(contractAddress, tokenId, url).send({ from: accounts[0], gas: Math.floor(gas * 1.2) });
                 status.innerHTML = `URL 已设置 (<a href="${xLayer.explorerUrl}/tx/${tx.transactionHash}" target="_blank">查看交易</a>)`;
@@ -296,8 +321,14 @@
             }
             try {
                 section.classList.add('loading');
-                status.innerText = "正在设置文本...";
+                status.innerText = "正在检查所有权...";
                 const contractAddress = contracts[selectedDomain].address;
+                const isOwned = await checkTokenOwnership(contractAddress, tokenId);
+                if (!isOwned) {
+                    status.innerText = "该地址不拥有对应的 Token ID";
+                    return;
+                }
+                status.innerText = "正在设置文本...";
                 const gas = await resolverContract.methods.resolveText(contractAddress, tokenId, text).estimateGas({ from: accounts[0] }).catch(() => 600000);
                 const tx = await resolverContract.methods.resolveText(contractAddress, tokenId, text).send({ from: accounts[0], gas: Math.floor(gas * 1.2) });
                 status.innerHTML = `文本已设置 (<a href="${xLayer.explorerUrl}/tx/${tx.transactionHash}" target="_blank">查看交易</a>)`;
