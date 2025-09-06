@@ -103,28 +103,32 @@
                     return;
                 }
 
-                const walletAddress = (await resolverContract.methods.getWalletByDomain(domainInput).call()) || "无";
-                const url = (await resolverContract.methods.getUrlByDomain(domainInput).call()) || "无";
-                const text = (await resolverContract.methods.getTextByDomain(domainInput).call()) || "无";
+                const walletAddress = (await resolverContract.methods.getWalletByDomain(domainInput).call()) || "0x0000000000000000000000000000000000000000";
+                const url = (await resolverContract.methods.getUrlByDomain(domainInput).call()) || "";
+                const text = (await resolverContract.methods.getTextByDomain(domainInput).call()) || "";
+
+                const walletDisplay = walletAddress !== "0x0000000000000000000000000000000000000000" ? walletAddress : "无";
+                const urlDisplay = url !== "" ? url : "无";
+                const textDisplay = text !== "" ? text : "无";
 
                 let resultHtml = `
                     <div class="result-item">
                         <h3>${domainInput}</h3>
-                        <p><strong>钱包地址:</strong> ${walletAddress}
-                            ${walletAddress !== "无" ? `<button class="copy-button" onclick="copyToClipboard('${walletAddress}')">复制</button>` : ''}
+                        <p><strong>钱包地址:</strong> ${walletDisplay}
+                            ${walletDisplay !== "无" ? `<button class="copy-button" onclick="copyToClipboard('${walletDisplay}')">复制</button>` : ''}
                         </p>
                 `;
-                if (url !== "无") {
+                if (urlDisplay !== "无") {
                     resultHtml += `
-                        <p><strong>网址:</strong> <a href="${url}" target="_blank">${url}</a>
-                            <button class="go-button" onclick="window.open('${url}', '_blank')">跳转</button>
+                        <p><strong>网址:</strong> <a href="${urlDisplay}" target="_blank">${urlDisplay}</a>
+                            <button class="go-button" onclick="window.open('${urlDisplay}', '_blank')">跳转</button>
                         </p>
                     `;
                 } else {
                     resultHtml += `<p><strong>网址:</strong> 无</p>`;
                 }
-                if (text !== "无") {
-                    resultHtml += `<p><strong>文本:</strong> ${text}</p>`;
+                if (textDisplay !== "无") {
+                    resultHtml += `<p><strong>文本:</strong> ${textDisplay}</p>`;
                 } else {
                     resultHtml += `<p><strong>文本:</strong> 无</p>`;
                 }
