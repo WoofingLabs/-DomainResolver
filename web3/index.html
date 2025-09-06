@@ -58,8 +58,7 @@
             {"inputs":[{"internalType":"string","name":"domainName","type":"string"}],"name":"getWalletByDomain","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
             {"inputs":[{"internalType":"string","name":"domainName","type":"string"}],"name":"getUrlByDomain","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
             {"inputs":[{"internalType":"string","name":"domainName","type":"string"}],"name":"getTextByDomain","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
-            {"inputs":[{"internalType":"string","name":"domainName","type":"string"}],"name":"isDomainResolved","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},
-            {"inputs":[{"internalType":"string","name":"domainName","type":"string"}],"name":"domainToResolution","outputs":[{"components":[{"internalType":"string","name":"domainName","type":"string"},{"internalType":"address","name":"walletAddress","type":"address"},{"internalType":"string","name":"url","type":"string"},{"internalType":"string","name":"text","type":"string"},{"internalType":"uint256","name":"timestamp","type":"uint256"}],"internalType":"struct DomainResolver.Resolution","name":"res","type":"tuple"}],"stateMutability":"view","type":"function"}
+            {"inputs":[{"internalType":"string","name":"domainName","type":"string"}],"name":"isDomainResolved","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"}
         ], resolverContractAddress);
 
         const contracts = {
@@ -98,20 +97,20 @@
                 status.innerText = "正在查询...";
                 results.innerHTML = "";
 
-                const result = await resolverContract.methods.domainToResolution(domainInput).call();
-                if (!result.domainName || result.walletAddress === '0x0000000000000000000000000000000000000000') {
+                const isResolved = await resolverContract.methods.isDomainResolved(domainInput).call();
+                if (!isResolved) {
                     status.innerText = `未找到域名 "${domainInput}" 的解析记录`;
                     return;
                 }
 
-                const walletAddress = result.walletAddress || "无";
-                const url = result.url || "无";
-                const text = result.text || "无";
+                const walletAddress = (await resolverContract.methods.getWalletByDomain(domainInput).call()) || "无";
+                const url = (await resolverContract.methods.getUrlByDomain(domainInput).call()) || "无";
+                const text = (await resolverContract.methods.getTextByDomain(domainInput).call()) || "无";
 
                 let resultHtml = `
                     <div class="result-item">
                         <h3>${domainInput}</h3>
-                        <p><strong>钱包地址:</strong> ${walletAddress} 
+                        <p><strong>钱包地址:</strong> ${walletAddress}
                             ${walletAddress !== "无" ? `<button class="copy-button" onclick="copyToClipboard('${walletAddress}')">复制</button>` : ''}
                         </p>
                 `;
