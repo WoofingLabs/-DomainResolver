@@ -59,7 +59,7 @@
             {"inputs":[{"internalType":"string","name":"domainName","type":"string"}],"name":"getUrlByDomain","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
             {"inputs":[{"internalType":"string","name":"domainName","type":"string"}],"name":"getTextByDomain","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
             {"inputs":[{"internalType":"string","name":"domainName","type":"string"}],"name":"isDomainResolved","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},
-            {"inputs":[{"internalType":"string","name":"domainName","type":"string"}],"name":"domainToResolution","outputs":[{"components":[{"internalType":"string","name":"domainName","type":"string"},{"internalType":"address","name":"walletAddress","type":"address"},{"internalType":"string","name":"url","type":"string"},{"internalType":"string","name":"text","type":"string"},{"internalType":"uint256","name":"timestamp","type":"uint256"}],"internalType":"struct DomainResolver.Resolution","name":"","type":"tuple"}],"stateMutability":"view","type":"function"}
+            {"inputs":[{"internalType":"string","name":"domainName","type":"string"}],"name":"domainToResolution","outputs":[{"components":[{"internalType":"string","name":"domainName","type":"string"},{"internalType":"address","name":"walletAddress","type":"address"},{"internalType":"string","name":"url","type":"string"},{"internalType":"string","name":"text","type":"string"},{"internalType":"uint256","name":"timestamp","type":"uint256"}],"internalType":"struct DomainResolver.Resolution","name":"res","type":"tuple"}],"stateMutability":"view","type":"function"}
         ], resolverContractAddress);
 
         const contracts = {
@@ -98,41 +98,42 @@
                 status.innerText = "正在查询...";
                 results.innerHTML = "";
 
-                const resolution = await resolverContract.methods.domainToResolution(domainInput).call();
-                if (!resolution.domainName) {
+                const result = await resolverContract.methods.domainToResolution(domainInput).call();
+                if (!result.domainName || result.walletAddress === '0x0000000000000000000000000000000000000000') {
                     status.innerText = `未找到域名 "${domainInput}" 的解析记录`;
                     return;
                 }
 
-                const walletAddress = resolution.walletAddress;
-                const url = resolution.url;
-                const text = resolution.text;
-                const timestamp = resolution.timestamp;
-                const date = new Date(Number(timestamp) * 1000).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
+                const walletAddress = result.walletAddress || "无";
+                const url = result.url || "无";
+                const text = result.text || "无";
 
                 let resultHtml = `
                     <div class="result-item">
                         <h3>${domainInput}</h3>
                         <p><strong>钱包地址:</strong> ${walletAddress} 
-                            <button class="copy-button" onclick="copyToClipboard('${walletAddress}')">复制</button>
+                            ${walletAddress !== "无" ? `<button class="copy-button" onclick="copyToClipboard('${walletAddress}')">复制</button>` : ''}
                         </p>
-                        <p><strong>解析时间:</strong> ${date} (JST)</p>
                 `;
-                if (url) {
+                if (url !== "无") {
                     resultHtml += `
-                        <p><strong>URL:</strong> <a href="${url}" target="_blank">${url}</a>
+                        <p><strong>网址:</strong> <a href="${url}" target="_blank">${url}</a>
                             <button class="go-button" onclick="window.open('${url}', '_blank')">跳转</button>
                         </p>
                     `;
+                } else {
+                    resultHtml += `<p><strong>网址:</strong> 无</p>`;
                 }
-                if (text) {
+                if (text !== "无") {
                     resultHtml += `<p><strong>文本:</strong> ${text}</p>`;
+                } else {
+                    resultHtml += `<p><strong>文本:</strong> 无</p>`;
                 }
                 resultHtml += `</div>`;
                 results.innerHTML = resultHtml;
                 status.innerText = "";
             } catch (error) {
-                console.error(error);
+                console.error("Error details:", error);
                 status.innerText = "查询失败: " + (error.message.includes('revert') ? error.message.split('revert')[1]?.trim() || '未知原因' : error.message);
             } finally {
                 searchButton.classList.remove('loading');
