@@ -120,7 +120,8 @@
             {"inputs":[{"internalType":"address","name":"wallet","type":"address"}],"name":"getDomainsByWallet","outputs":[{"internalType":"string[]","name":"","type":"string[]"}],"stateMutability":"view","type":"function"},
             {"inputs":[{"internalType":"string","name":"domainName","type":"string"}],"name":"getUrlByDomain","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
             {"inputs":[{"internalType":"string","name":"domainName","type":"string"}],"name":"getTextByDomain","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
-            {"inputs":[{"internalType":"address","name":"contractAddress","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"getResolution","outputs":[{"components":[{"internalType":"string","name":"domainName","type":"string"},{"internalType":"address","name":"walletAddress","type":"address"},{"internalType":"string","name":"url","type":"string"},{"internalType":"string","name":"text","type":"string"},{"internalType":"uint256","name":"timestamp","type":"uint256"}],"internalType":"struct DomainResolver.Resolution","name":"","type":"tuple"}],"stateMutability":"view","type":"function"}
+            {"inputs":[{"internalType":"address","name":"contractAddress","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"getResolution","outputs":[{"components":[{"internalType":"string","name":"domainName","type":"string"},{"internalType":"address","name":"walletAddress","type":"address"},{"internalType":"string","name":"url","type":"string"},{"internalType":"string","name":"text","type":"string"},{"internalType":"uint256","name":"timestamp","type":"uint256"}],"internalType":"struct DomainResolver.Resolution","name":"","type":"tuple"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"internalType":"address","name":"contractAddress","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"isTokenResolved","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"}
         ];
 
         const xLayer = { chainId: 196, name: 'X Layer mainnet', explorerUrl: 'https://www.okx.com/web3/explorer/xlayer', rpcUrl: 'https://rpc.xlayer.tech' };
@@ -167,26 +168,17 @@
 
         function selectDomain(domain) {
             selectedDomain = domain;
-            const okbButton = document.getElementById('okbButton');
-            const starButton = document.getElementById('starButton');
-            const xdogButton = document.getElementById('xdogButton');
-            const xlayerButton = document.getElementById('xlayerButton');
-            const okxButton = document.getElementById('okxButton');
-            const cnokxButton = document.getElementById('cnokxButton');
-            const status = document.getElementById('resolveStatus');
-
-            okbButton.classList.toggle('active', domain === 'okb');
-            starButton.classList.toggle('active', domain === 'star');
-            xdogButton.classList.toggle('active', domain === 'xdog');
-            xlayerButton.classList.toggle('active', domain === 'xlayer');
-            okxButton.classList.toggle('active', domain === 'okx');
-            cnokxButton.classList.toggle('active', domain === 'cnokx');
-
+            document.getElementById('okbButton').classList.toggle('active', domain === 'okb');
+            document.getElementById('starButton').classList.toggle('active', domain === 'star');
+            document.getElementById('xdogButton').classList.toggle('active', domain === 'xdog');
+            document.getElementById('xlayerButton').classList.toggle('active', domain === 'xlayer');
+            document.getElementById('okxButton').classList.toggle('active', domain === 'okx');
+            document.getElementById('cnokxButton').classList.toggle('active', domain === 'cnokx');
             document.getElementById('contractAddress').textContent = contracts[domain].address;
             document.getElementById('tokenId').value = '';
             document.getElementById('urlInput').value = '';
             document.getElementById('textInput').value = '';
-            status.textContent = '';
+            document.getElementById('resolveStatus').textContent = '';
             document.getElementById('urlStatus').textContent = '';
             document.getElementById('textStatus').textContent = '';
         }
@@ -194,7 +186,6 @@
         function copyToClipboard() {
             const status = document.getElementById('resolveStatus');
             const contractAddress = document.getElementById('contractAddress').textContent;
-
             const textArea = document.createElement('textarea');
             textArea.value = contractAddress;
             textArea.style.position = 'fixed';
@@ -226,16 +217,20 @@
             }
             try {
                 section.classList.add('loading');
-                status.innerText = "正在解析域名...";
+                status.innerText = "正在检查域名状态...";
                 const contractAddress = contracts[selectedDomain].address;
                 const isResolved = await resolverContract.methods.isTokenResolved(contractAddress, tokenId).call();
                 if (isResolved) {
                     const resolution = await resolverContract.methods.getResolution(contractAddress, tokenId).call();
                     if (resolution.walletAddress.toLowerCase() === accounts[0].toLowerCase()) {
-                        status.innerText = "此域名已由当前钱包解析";
+                        status.innerText = `域名 ${resolution.domainName} 已由当前钱包解析`;
+                        return;
+                    } else {
+                        status.innerText = `域名 ${resolution.domainName} 已被其他地址解析`;
                         return;
                     }
                 }
+                status.innerText = "正在解析域名...";
                 const gas = await resolverContract.methods.resolveDomain(contractAddress, tokenId).estimateGas({ from: accounts[0] }).catch(() => 600000);
                 const tx = await resolverContract.methods.resolveDomain(contractAddress, tokenId).send({ from: accounts[0], gas: Math.floor(gas * 1.2) });
                 const resolution = await resolverContract.methods.getResolution(contractAddress, tokenId).call();
