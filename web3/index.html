@@ -58,7 +58,8 @@
             {"inputs":[{"internalType":"string","name":"domainName","type":"string"}],"name":"getWalletByDomain","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
             {"inputs":[{"internalType":"string","name":"domainName","type":"string"}],"name":"getUrlByDomain","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
             {"inputs":[{"internalType":"string","name":"domainName","type":"string"}],"name":"getTextByDomain","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
-            {"inputs":[{"internalType":"string","name":"domainName","type":"string"}],"name":"isDomainResolved","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"}
+            {"inputs":[{"internalType":"string","name":"domainName","type":"string"}],"name":"isDomainResolved","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"internalType":"string","name":"domainName","type":"string"}],"name":"domainToResolution","outputs":[{"components":[{"internalType":"string","name":"domainName","type":"string"},{"internalType":"address","name":"walletAddress","type":"address"},{"internalType":"string","name":"url","type":"string"},{"internalType":"string","name":"text","type":"string"},{"internalType":"uint256","name":"timestamp","type":"uint256"}],"internalType":"struct DomainResolver.Resolution","name":"","type":"tuple"}],"stateMutability":"view","type":"function"}
         ], resolverContractAddress);
 
         const contracts = {
@@ -98,9 +99,12 @@
                     return;
                 }
 
-                const walletAddress = await resolverContract.methods.getWalletByDomain(domainInput).call();
-                const url = await resolverContract.methods.getUrlByDomain(domainInput).call();
-                const text = await resolverContract.methods.getTextByDomain(domainInput).call();
+                const resolution = await resolverContract.methods.domainToResolution(domainInput).call();
+                const walletAddress = resolution.walletAddress;
+                const url = resolution.url;
+                const text = resolution.text;
+                const timestamp = resolution.timestamp;
+                const date = new Date(Number(timestamp) * 1000).toLocaleString('zh-CN');
 
                 let resultHtml = `
                     <div class="result-item">
@@ -108,6 +112,7 @@
                         <p><strong>钱包地址:</strong> ${walletAddress} 
                             <button class="copy-button" onclick="copyToClipboard('${walletAddress}')">复制</button>
                         </p>
+                        <p><strong>解析时间:</strong> ${date}</p>
                 `;
                 if (url) {
                     resultHtml += `
