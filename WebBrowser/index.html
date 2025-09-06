@@ -134,6 +134,12 @@
             return /^[\u4e00-\u9fa5]+$/.test(str);
         }
 
+        // 规范化后缀大小写
+        function normalizeSuffix(suffix) {
+            const lowerCaseSuffixes = ['okb', 'star', 'xdog', 'xlayer'];
+            return lowerCaseSuffixes.includes(suffix.toLowerCase()) ? suffix.toLowerCase() : (suffix.toLowerCase() === 'okx' ? 'OKX' : suffix);
+        }
+
         let history = [];
         let currentIndex = -1;
 
@@ -144,16 +150,19 @@
             const backButton = document.getElementById('backButton');
             const forwardButton = document.getElementById('forwardButton');
 
-            try {
-                const parts = domainInput.split('.');
-                if (parts.length < 2) {
-                    status.innerText = "域名格式错误，请包含后缀 (例如: 0.OKX)";
-                    iframe.src = 'about:blank';
-                    return;
-                }
-                const suffix = parts[parts.length - 1];
-                const prefix = parts.slice(0, -1).join('.');
+            // 规范化域名
+            const parts = domainInput.split('.');
+            if (parts.length < 2) {
+                status.innerText = "域名格式错误，请包含后缀 (例如: 0.OKX)";
+                iframe.src = 'about:blank';
+                return;
+            }
+            const prefix = parts.slice(0, -1).join('.');
+            let suffix = parts[parts.length - 1];
+            suffix = normalizeSuffix(suffix);
+            const normalizedDomain = prefix + '.' + suffix;
 
+            try {
                 const supportedSuffixes = ['okb', 'star', 'xdog', 'xlayer', 'OKX'];
                 if (!supportedSuffixes.includes(suffix)) {
                     status.innerText = `不支持的域名后缀。支持的后缀：${supportedSuffixes.join(', ')}`;
@@ -177,14 +186,14 @@
                     contractAddress = contracts[suffix.toLowerCase()];
                 }
 
-                const isResolved = await resolverContract.methods.isDomainResolved(domainInput).call();
+                const isResolved = await resolverContract.methods.isDomainResolved(normalizedDomain).call();
                 if (!isResolved) {
-                    status.innerText = `未找到域名 "${domainInput}" 的解析记录`;
+                    status.innerText = `未找到域名 "${normalizedDomain}" 的解析记录`;
                     iframe.src = 'about:blank';
                     return;
                 }
 
-                const url = await resolverContract.methods.getUrlByDomain(domainInput).call();
+                const url = await resolverContract.methods.getUrlByDomain(normalizedDomain).call();
                 if (!url || url === "") {
                     status.innerText = "未找到有效网址";
                     iframe.src = 'about:blank';
@@ -198,8 +207,8 @@
                 history.push(url);
                 currentIndex++;
 
-                // 地址栏显示域名，iframe 加载实际 URL
-                domainInputField.value = domainInput;
+                // 地址栏显示规范化域名，iframe 加载实际 URL
+                domainInputField.value = normalizedDomain;
                 iframe.src = url;
                 status.innerText = "";
                 backButton.disabled = currentIndex <= 0;
