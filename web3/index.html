@@ -40,7 +40,7 @@
     <div class="container">
         <img src="https://swap.woofingjace.com/image/header/logo.png" alt="X Layer Domain Search" class="logo">
         <div class="search-box">
-            <input type="text" id="domainInput" placeholder="输入域名 (例如: example.okb)">
+            <input type="text" id="domainInput" placeholder="输入域名 (例如: 0.okx)">
             <button id="searchButton">搜索</button>
         </div>
         <div id="results" class="results"></div>
@@ -82,8 +82,13 @@
                 return;
             }
 
-            const suffix = Object.keys(contracts).find(s => domainInput.endsWith('.' + s));
-            if (!suffix) {
+            const parts = domainInput.split('.');
+            if (parts.length < 2) {
+                status.innerText = "域名格式错误，请包含后缀 (例如: 0.okx)";
+                return;
+            }
+            const suffix = parts[parts.length - 1];
+            if (!contracts[suffix]) {
                 status.innerText = `不支持的域名后缀。支持的后缀：${Object.keys(contracts).join(', ')}`;
                 return;
             }
@@ -93,18 +98,17 @@
                 status.innerText = "正在查询...";
                 results.innerHTML = "";
 
-                const isResolved = await resolverContract.methods.isDomainResolved(domainInput).call();
-                if (!isResolved) {
+                const resolution = await resolverContract.methods.domainToResolution(domainInput).call();
+                if (!resolution.domainName) {
                     status.innerText = `未找到域名 "${domainInput}" 的解析记录`;
                     return;
                 }
 
-                const resolution = await resolverContract.methods.domainToResolution(domainInput).call();
                 const walletAddress = resolution.walletAddress;
                 const url = resolution.url;
                 const text = resolution.text;
                 const timestamp = resolution.timestamp;
-                const date = new Date(Number(timestamp) * 1000).toLocaleString('zh-CN');
+                const date = new Date(Number(timestamp) * 1000).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
 
                 let resultHtml = `
                     <div class="result-item">
@@ -112,7 +116,7 @@
                         <p><strong>钱包地址:</strong> ${walletAddress} 
                             <button class="copy-button" onclick="copyToClipboard('${walletAddress}')">复制</button>
                         </p>
-                        <p><strong>解析时间:</strong> ${date}</p>
+                        <p><strong>解析时间:</strong> ${date} (JST)</p>
                 `;
                 if (url) {
                     resultHtml += `
