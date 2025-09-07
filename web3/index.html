@@ -40,7 +40,7 @@
     <div class="container">
         <img src="https://swap.woofingjace.com/image/header/logo.png" alt="X Layer Domain Search" class="logo">
         <div class="search-box">
-            <input type="text" id="domainInput" placeholder="输入域名 (例如: 0.OKX)">
+            <input type="text" id="domainInput" placeholder="输入域名 (例如: example.OKX 或 测试.OKX)">
             <button id="searchButton">搜索</button>
         </div>
         <div id="results" class="results"></div>
@@ -66,18 +66,16 @@
             'star': '0xfD809E6c00b7ABD737C3FaDFCaFAF4b6564AF9dD',
             'xdog': '0x68B6387628b4096af034c3a9de3073AB18E744C2',
             'xlayer': '0x70fda345B815EbfceE5a20858F5115126Ca2abF7',
-            'OKX': '0xC3ad7bD7e434F4C1C023EbC6fe0AC4705e9518bC', // 支持中文和数字
-            'OKX': '0x204fF780E126ADa44B5665a9cBC66925264c8dcB'  // 只支持中文 (覆盖前者，优先级高)
+            'OKX_EN': '0xC3ad7bD7e434F4C1C023EbC6fe0AC4705e9518bC',
+            'OKX_CN': '0x204fF780E126ADa44B5665a9cBC66925264c8dcB'
         };
 
-        // 校验中文和数字
-        function isChineseOrNumber(str) {
-            return /^[\u4e00-\u9fa50-9]+$/.test(str);
-        }
-
-        // 校验仅中文
         function isChineseOnly(str) {
             return /^[\u4e00-\u9fa5]+$/.test(str);
+        }
+
+        function isEnglishOrNumber(str) {
+            return /^[a-zA-Z0-9]+$/.test(str);
         }
 
         async function searchDomain() {
@@ -93,7 +91,7 @@
 
             const parts = domainInput.split('.');
             if (parts.length < 2) {
-                status.innerText = "域名格式错误，请包含后缀 (例如: 0.OKX)";
+                status.innerText = "域名格式错误，请包含后缀 (例如: example.OKX 或 测试.OKX)";
                 return;
             }
             const suffix = parts[parts.length - 1];
@@ -105,20 +103,28 @@
                 return;
             }
 
-            // 校验 OKX 后缀的规则
+            let contractAddress;
             if (suffix === 'OKX') {
-                if (!isChineseOrNumber(prefix)) {
-                    status.innerText = "OKX 域名前缀必须为中文或数字";
-                    return;
-                }
-                // 如果前缀仅含中文，映射到 cnokx 合约
                 if (isChineseOnly(prefix)) {
-                    if (!contracts['OKX']) {
-                        status.innerText = "仅中文 OKX 域名未配置合约";
+                    contractAddress = contracts['OKX_CN'];
+                    if (!contractAddress) {
+                        status.innerText = "中文 OKX 域名未配置合约";
                         return;
                     }
-                } else if (!isChineseOrNumber(prefix)) {
-                    status.innerText = "OKX 域名前缀必须为中文或数字";
+                } else if (isEnglishOrNumber(prefix)) {
+                    contractAddress = contracts['OKX_EN'];
+                    if (!contractAddress) {
+                        status.innerText = "英文或数字 OKX 域名未配置合约";
+                        return;
+                    }
+                } else {
+                    status.innerText = "OKX 域名前缀仅支持纯中文或英文/数字组合，不支持混合中文与英文/数字";
+                    return;
+                }
+            } else {
+                contractAddress = contracts[suffix];
+                if (!contractAddress) {
+                    status.innerText = `后缀 ${suffix} 未配置合约`;
                     return;
                 }
             }
@@ -169,36 +175,4 @@
             } catch (error) {
                 console.error("Error details:", error);
                 status.innerText = "查询失败: " + (error.message.includes('revert') ? error.message.split('revert')[1]?.trim() || '未知原因' : error.message);
-            } finally {
-                searchButton.classList.remove('loading');
-            }
-        }
-
-        function copyToClipboard(text) {
-            const status = document.getElementById('status');
-            const textArea = document.createElement('textarea');
-            textArea.value = text;
-            textArea.style.position = 'fixed';
-            textArea.style.opacity = '0';
-            document.body.appendChild(textArea);
-            textArea.select();
-            try {
-                document.execCommand('copy');
-                status.innerText = '已复制到剪贴板';
-            } catch (error) {
-                console.error('复制失败:', error);
-                status.innerText = '复制失败，请手动复制';
-            } finally {
-                document.body.removeChild(textArea);
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('searchButton').addEventListener('click', searchDomain);
-            document.getElementById('domainInput').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') searchDomain();
-            });
-        });
-    </script>
-</body>
-</html>
+           
