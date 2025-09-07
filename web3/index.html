@@ -40,13 +40,13 @@
     <div class="container">
         <img src="https://swap.woofingjace.com/image/header/logo.png" alt="X Layer Domain Search" class="logo">
         <div class="search-box">
-            <input type="text" id="domainInput" placeholder="输入域名 (例如: example.OKX 或 测试.OKX)">
-            <button id="searchButton">搜索</button>
+            <input type="text" id="domainInput" placeholder="Enter domain (e.g., example.OKX or test.OKX)">
+            <button id="searchButton">Search</button>
         </div>
         <div id="results" class="results"></div>
         <div id="status" class="status"></div>
         <div class="footer">
-            由 <a href="https://www.okx.com/web3/explorer/xlayer" target="_blank">X Layer</a> 提供支持 | 域名搜索 © 2025
+            Powered by <a href="https://www.okx.com/web3/explorer/xlayer" target="_blank">X Layer</a> | Domain Search © 2025
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/web3@1.7.0/dist/web3.min.js"></script>
@@ -84,14 +84,18 @@
             const status = document.getElementById('status');
             const searchButton = document.getElementById('searchButton');
 
+            console.log(`Input domain: ${domainInput}`);
+
             if (!domainInput) {
-                status.innerText = "请输入域名";
+                status.innerText = "Please enter a domain";
+                console.log("Error: Empty domain input");
                 return;
             }
 
             const parts = domainInput.split('.');
             if (parts.length < 2) {
-                status.innerText = "域名格式错误，请包含后缀 (例如: example.OKX 或 测试.OKX)";
+                status.innerText = "Invalid domain format, please include a suffix (e.g., example.OKX or test.OKX)";
+                console.log("Error: Invalid domain format, missing suffix");
                 return;
             }
             const suffix = parts[parts.length - 1];
@@ -99,7 +103,8 @@
 
             const supportedSuffixes = ['okb', 'star', 'xdog', 'xlayer', 'OKX'];
             if (!supportedSuffixes.includes(suffix)) {
-                status.innerText = `不支持的域名后缀。支持的后缀：${supportedSuffixes.join(', ')}`;
+                status.innerText = `Unsupported domain suffix. Supported suffixes: ${supportedSuffixes.join(', ')}`;
+                console.log(`Error: Unsupported suffix ${suffix}`);
                 return;
             }
 
@@ -107,72 +112,129 @@
             if (suffix === 'OKX') {
                 if (isChineseOnly(prefix)) {
                     contractAddress = contracts['OKX_CN'];
+                    console.log(`Using OKX_CN contract: ${contractAddress} for Chinese prefix: ${prefix}`);
                     if (!contractAddress) {
-                        status.innerText = "中文 OKX 域名未配置合约";
+                        status.innerText = "No contract configured for Chinese OKX domains";
+                        console.log("Error: OKX_CN contract not configured");
                         return;
                     }
                 } else if (isEnglishOrNumber(prefix)) {
                     contractAddress = contracts['OKX_EN'];
+                    console.log(`Using OKX_EN contract: ${contractAddress} for English/number prefix: ${prefix}`);
                     if (!contractAddress) {
-                        status.innerText = "英文或数字 OKX 域名未配置合约";
+                        status.innerText = "No contract configured for English/number OKX domains";
+                        console.log("Error: OKX_EN contract not configured");
                         return;
                     }
                 } else {
-                    status.innerText = "OKX 域名前缀仅支持纯中文或英文/数字组合，不支持混合中文与英文/数字";
+                    status.innerText = "OKX domain prefix must be either Chinese-only or English letters/numbers only";
+                    console.log(`Error: Invalid prefix ${prefix} (mixed characters not supported)`);
                     return;
                 }
             } else {
                 contractAddress = contracts[suffix];
+                if (!isEnglishOrNumber(prefix)) {
+                    status.innerText = `Domain prefix for ${suffix} must contain only English letters and/or numbers`;
+                    console.log(`Error: Invalid prefix ${prefix} for suffix ${suffix} (must be English/number)`);
+                    return;
+                }
+                console.log(`Using contract: ${contractAddress} for suffix: ${suffix}, prefix: ${prefix}`);
                 if (!contractAddress) {
-                    status.innerText = `后缀 ${suffix} 未配置合约`;
+                    status.innerText = `No contract configured for suffix ${suffix}`;
+                    console.log(`Error: No contract for suffix ${suffix}`);
                     return;
                 }
             }
 
             try {
                 searchButton.classList.add('loading');
-                status.innerText = "正在查询...";
+                status.innerText = "Searching...";
                 results.innerHTML = "";
+                console.log(`Calling isDomainResolved for ${domainInput}`);
 
                 const isResolved = await resolverContract.methods.isDomainResolved(domainInput).call();
+                console.log(`isDomainResolved result: ${isResolved}`);
                 if (!isResolved) {
-                    status.innerText = `未找到域名 "${domainInput}" 的解析记录`;
+                    status.innerText = `No resolution record found for domain "${domainInput}"`;
+                    console.log(`Error: Domain ${domainInput} not resolved`);
                     return;
                 }
 
+                console.log(`Calling getWalletByDomain for ${domainInput}`);
                 const walletAddress = (await resolverContract.methods.getWalletByDomain(domainInput).call()) || "0x0000000000000000000000000000000000000000";
-                const url = (await resolverContract.methods.getUrlByDomain(domainInput).call()) || "";
-                const text = (await resolverContract.methods.getTextByDomain(domainInput).call()) || "";
+                console.log(`Wallet address: ${walletAddress}`);
 
-                const walletDisplay = walletAddress !== "0x0000000000000000000000000000000000000000" ? walletAddress : "无";
-                const urlDisplay = url !== "" ? url : "无";
-                const textDisplay = text !== "" ? text : "无";
+                console.log(`Calling getUrlByDomain for ${domainInput}`);
+                const url = (await resolverContract.methods.getUrlByDomain(domainInput).call()) || "";
+                console.log(`URL: ${url}`);
+
+                console.log(`Calling getTextByDomain for ${domainInput}`);
+                const text = (await resolverContract.methods.getTextByDomain(domainInput).call()) || "";
+                console.log(`Text: ${text}`);
+
+                const walletDisplay = walletAddress !== "0x0000000000000000000000000000000000000000" ? walletAddress : "None";
+                const urlDisplay = url !== "" ? url : "None";
+                const textDisplay = text !== "" ? text : "None";
 
                 let resultHtml = `
                     <div class="result-item">
                         <h3>${domainInput}</h3>
-                        <p><strong>钱包地址:</strong> ${walletDisplay}
-                            ${walletDisplay !== "无" ? `<button class="copy-button" onclick="copyToClipboard('${walletDisplay}')">复制</button>` : ''}
+                        <p><strong>Wallet Address:</strong> ${walletDisplay}
+                            ${walletDisplay !== "None" ? `<button class="copy-button" onclick="copyToClipboard('${walletDisplay}')">Copy</button>` : ''}
                         </p>
                 `;
-                if (urlDisplay !== "无") {
+                if (urlDisplay !== "None") {
                     resultHtml += `
-                        <p><strong>网址:</strong> <a href="${urlDisplay}" target="_blank">${urlDisplay}</a>
-                            <button class="go-button" onclick="window.open('${urlDisplay}', '_blank')">跳转</button>
+                        <p><strong>URL:</strong> <a href="${urlDisplay}" target="_blank">${urlDisplay}</a>
+                            <button class="go-button" onclick="window.open('${urlDisplay}', '_blank')">Go</button>
                         </p>
                     `;
                 } else {
-                    resultHtml += `<p><strong>网址:</strong> 无</p>`;
+                    resultHtml += `<p><strong>URL:</strong> None</p>`;
                 }
-                if (textDisplay !== "无") {
-                    resultHtml += `<p><strong>文本:</strong> ${textDisplay}</p>`;
+                if (textDisplay !== "None") {
+                    resultHtml += `<p><strong>Text:</strong> ${textDisplay}</p>`;
                 } else {
-                    resultHtml += `<p><strong>文本:</strong> 无</p>`;
+                    resultHtml += `<p><strong>Text:</strong> None</p>`;
                 }
                 resultHtml += `</div>`;
                 results.innerHTML = resultHtml;
                 status.innerText = "";
+                console.log("Search completed successfully");
             } catch (error) {
-                console.error("Error details:", error);
-                status.innerText = "查询失败: " + (error.message.includes('revert') ? error.message.split('revert')[1]?.trim() || '未知原因' : error.message);
-           
+                console.error("Search error:", error);
+                status.innerText = "Search failed: " + (error.message.includes('revert') ? error.message.split('revert')[1]?.trim() || 'Unknown reason' : error.message);
+            } finally {
+                searchButton.classList.remove('loading');
+            }
+        }
+
+        function copyToClipboard(text) {
+            const status = document.getElementById('status');
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.opacity = '0';
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                status.innerText = 'Copied to clipboard';
+                console.log(`Copied to clipboard: ${text}`);
+            } catch (error) {
+                console.error('Copy failed:', error);
+                status.innerText = 'Copy failed, please copy manually';
+            } finally {
+                document.body.removeChild(textArea);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('searchButton').addEventListener('click', searchDomain);
+            document.getElementById('domainInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') searchDomain();
+            });
+        });
+    </script>
+</body>
+</html>
