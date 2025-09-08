@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Domain Search - X Layer</title>
+    <link rel="icon" href="https://swap.woofingjace.com/image/header/logo.png" type="image/png">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f8fa;
+            color: #14171a;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            margin: 20px auto;
+            text-align: center;
+        }
+        .logo {
+            max-width: 272px;
+            margin: 20px auto;
+        }
+        .search-box {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            max-width: 584px;
+            margin: 0 auto;
+            border: 1px solid #dfe1e5;
+            border-radius: 24px;
+            box-shadow: 0 1px 6px rgba(32, 33, 36, 0.28);
+            padding: 10px;
+        }
+        .search-box input {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-size: 16px;
+            padding: 10px;
+            background: transparent;
+        }
+        .search-box button {
+            background: #1a0dab;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            padding: 8px 16px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        .search-box button:hover {
+            background: #174ea6;
+        }
+        .search-box button.loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+        .results {
+            margin-top: 20px;
+            text-align: left;
+            max-width: 584px;
+            width: 100%;
+        }
+        .result-item {
+            margin-bottom: 20px;
+        }
+        .result-item h3 {
+            color: #1a0dab;
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+        .result-item p {
+            font-size: 14px;
+            color: #4d5156;
+            line-height: 1.58;
+        }
+        .result-item a {
+            color: #1a0dab;
+            text-decoration: none;
+        }
+        .result-item a:hover {
+            text-decoration: underline;
+        }
+        .copy-button, .go-button {
+            background: #1a0dab;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 10px;
+            margin-right: 10px;
+        }
+        .copy-button:hover, .go-button:hover {
+            background: #174ea6;
+        }
+        .status {
+            font-size: 14px;
+            color: #d93025;
+            margin-top: 10px;
+        }
+        .profile-card {
+            max-width: 584px;
+            width: 100%;
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+        .banner {
+            width: 100%;
+            height: 200px;
+            background-size: cover;
+            background-position: center;
+        }
+        .avatar-container {
+            margin-top: -60px;
+            padding: 0 15px;
+        }
+        .avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 4px solid #fff;
+            background-size: cover;
+            background-position: center;
+        }
+        .profile-details {
+            padding: 15px;
+        }
+        .nickname {
+            font-size: 18px;
+            font-weight: bold;
+            color: #14171a;
+        }
+        .handle {
+            font-size: 13px;
+            color: #657786;
+            margin-bottom: 10px;
+        }
+        .bio {
+            font-size: 13px;
+            line-height: 1.4;
+            margin-bottom: 10px;
+        }
+        .info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            font-size: 13px;
+            color: #657786;
+        }
+        .info span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .info a {
+            color: #1a0dab;
+            text-decoration: none;
+        }
+        .info a:hover {
+            text-decoration: underline;
+        }
+        .error-message {
+            text-align: center;
+            padding: 15px;
+            font-size: 14px;
+            color: #d93025;
+        }
+        .footer {
+            margin-top: 20px;
+            font-size: 13px;
+            color: #70757a;
+        }
+        .footer a {
+            color: #1a0dab;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        @media (max-width: 600px) {
+            .container { padding: 10px; }
+            .search-box { flex-direction: column; padding: 8px; }
+            .search-box input { width: 100%; margin-bottom: 10px; }
+            .search-box button { width: 100%; }
+            .results, .profile-card { padding: 0 10px; }
+            .banner { height: 150px; }
+            .avatar { width: 80px; height: 80px; }
+            .avatar-container { margin-top: -50px; }
+            .nickname { font-size: 16px; }
+            .handle, .bio, .info { font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="https://swap.woofingjace.com/image/header/logo.png" alt="X Layer Domain Search" class="logo">
+        <div class="search-box">
+            <input type="text" id="domainInput" placeholder="Enter domain (e.g., example.OKX or test.OKX)">
+            <button id="searchButton">Search</button>
+        </div>
+        <div id="results" class="results"></div>
+        <div id="status" class="status"></div>
+        <div id="profileCard" class="profile-card"></div>
+        <div class="footer">
+            Powered by <a href="https://www.okx.com/web3/explorer/xlayer" target="_blank">X Layer</a> | Domain Search © 2025
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.7.0/dist/web3.min.js"></script>
+    <script>
+        const resolverContractAddress = '0x323CE1459B33ad71c8997db945Bd690dF07166F0';
+        const xLayer = { explorerUrl: 'https://www.okx.com/web3/explorer/xlayer', rpcUrl: 'https://rpc.xlayer.tech' };
+        const web3 = new Web3(xLayer.rpcUrl);
+        const resolverContract = new web3.eth.Contract([
+            {"inputs":[{"internalType":"string","name":"domainName","type":"string"}],"name":"getWalletByDomain","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"internalType":"string","name":"domainName","type":"string"}],"name":"getUrlByDomain","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"internalType":"string","name":"domainName","type":"string"}],"name":"getTextByDomain","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"internalType":"string","name":"domainName","type":"string"}],"name":"isDomainResolved","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"}
+        ], resolverContractAddress);
+
+        const contracts = {
+            'okb': '0xBf13Ed020DCF22bc8216A23A1167A5dD1fDC2D0E',
+            'star': '0xfD809E6c00b7ABD737C3FaDFCaFAF4b6564AF9dD',
+            'xdog': '0x68B6387628b4096af034c3a9de3073AB18E744C2',
+            'xlayer': '0x70fda345B815EbfceE5a20858F5115126Ca2abF7',
+            'OKX': '0xC3ad7bD7e434F4C1C023EbC6fe0AC4705e9518bC' // Single OKX contract
+        };
+
+        function isEnglishOrNumber(str) {
+            return /^[a-zA-Z0-9]+$/.test(str);
+        }
+
+        async function searchDomain() {
+            const domainInput = document.getElementById('domainInput').value.trim();
+            const results = document.getElementById('results');
+            const status = document.getElementById('status');
+            const profileCard = document.getElementById('profileCard');
+            const searchButton = document.getElementById('searchButton');
+
+            console.log(`Input domain: ${domainInput}`);
+
+            if (!domainInput) {
+                status.innerText = "Please enter a domain";
+                results.innerHTML = "";
+                profileCard.innerHTML = "";
+                console.log("Error: Empty domain input");
+                return;
+            }
+
+            const parts = domainInput.split('.');
+            if (parts.length < 2) {
+                status.innerText = "Invalid domain format, please include a suffix (e.g., example.OKX or test.OKX)";
+                results.innerHTML = "";
+                profileCard.innerHTML = "";
+                console.log("Error: Invalid domain format, missing suffix");
+                return;
+            }
+            const suffix = parts[parts.length - 1];
+            const prefix = parts.slice(0, -1).join('.');
+
+            const supportedSuffixes = ['okb', 'star', 'xdog', 'xlayer', 'OKX'];
+            if (!supportedSuffixes.includes(suffix)) {
+                status.innerText = `Unsupported domain suffix. Supported suffixes: ${supportedSuffixes.join(', ')}`;
+                results.innerHTML = "";
+                profileCard.innerHTML = "";
+                console.log(`Error: Unsupported suffix ${suffix}`);
+                return;
+            }
+
+            if (!isEnglishOrNumber(prefix)) {
+                status.innerText = `Domain prefix for ${suffix} must contain only English letters and/or numbers`;
+                results.innerHTML = "";
+                profileCard.innerHTML = "";
+                console.log(`Error: Invalid prefix ${prefix} for suffix ${suffix} (must be English/number)`);
+                return;
+            }
+
+            const contractAddress = contracts[suffix];
+            if (!contractAddress) {
+                status.innerText = `No contract configured for suffix ${suffix}`;
+                results.innerHTML = "";
+                profileCard.innerHTML = "";
+                console.log(`Error: No contract for suffix ${suffix}`);
+                return;
+            }
+
+            try {
+                searchButton.classList.add('loading');
+                status.innerText = "Searching...";
+                results.innerHTML = "";
+                profileCard.innerHTML = "";
+                console.log(`Calling isDomainResolved for ${domainInput}`);
+
+                const isResolved = await resolverContract.methods.isDomainResolved(domainInput).call();
+                console.log(`isDomainResolved result: ${isResolved}`);
+                if (!isResolved) {
+                    status.innerText = `No resolution record found for domain "${domainInput}"`;
+                    console.log(`Error: Domain ${domainInput} not resolved`);
+                    return;
+                }
+
+                console.log(`Calling getWalletByDomain for ${domainInput}`);
+                const walletAddress = (await resolverContract.methods.getWalletByDomain(domainInput).call()) || "0x0000000000000000000000000000000000000000";
+                console.log(`Wallet address: ${walletAddress}`);
+
+                console.log(`Calling getUrlByDomain for ${domainInput}`);
+                const url = (await resolverContract.methods.getUrlByDomain(domainInput).call()) || "";
+                console.log(`URL: ${url}`);
+
+                console.log(`Calling getTextByDomain for ${domainInput}`);
+                const text = (await resolverContract.methods.getTextByDomain(domainInput).call()) || "";
+                console.log(`Raw Text: "${text}"`);
+
+                const walletDisplay = walletAddress !== "0x0000000000000000000000000000000000000000" ? walletAddress : "None";
+                const urlDisplay = url !== "" ? url : "None";
+                const textDisplay = text !== "" ? text : "None";
+
+                let resultHtml = `
+                    <div class="result-item">
+                        <h3>${domainInput}</h3>
+                        <p><strong>Wallet Address:</strong> ${walletDisplay}
+                            ${walletDisplay !== "None" ? `<button class="copy-button" onclick="copyToClipboard('${walletDisplay}')">Copy</button>` : ''}
+                        </p>
+                `;
+                if (urlDisplay !== "None") {
+                    resultHtml += `
+                        <p><strong>URL:</strong> <a href="${urlDisplay}" target="_blank">${urlDisplay}</a>
+                            <button class="go-button" onclick="window.open('${urlDisplay}', '_blank')">Go</button>
+                        </p>
+                    `;
+                } else {
+                    resultHtml += `<p><strong>URL:</strong> None</p>`;
+                }
+                if (textDisplay !== "None") {
+                    resultHtml += `<p><strong>Text:</strong> ${textDisplay}</p>`;
+                } else {
+                    resultHtml += `<p><strong>Text:</strong> None</p>`;
+                }
+                resultHtml += `</div>`;
+                results.innerHTML = resultHtml;
+
+                // Generate profile card if text format is valid
+                let profileHtml = "";
+                if (text !== "") {
+                    // Replace \n literals with actual newlines
+                    const normalizedText = text.replace(/\\n/g, '\n');
+                    console.log(`Normalized Text: "${normalizedText}"`);
+                    const fields = normalizedText.split('\n').map(field => field.trim());
+                    console.log(`Text fields: [${fields.join(', ')}], Count: ${fields.length}`);
+                    if (fields.length === 7 && fields.every(field => field.length > 0)) {
+                        const [nickname, avatarUrl, bannerUrl, bio, location, website, level] = fields;
+                        const handle = `@${domainInput}`;
+                        profileHtml = `
+                            <div class="banner" style="background-image: url('${bannerUrl}')"></div>
+                            <div class="avatar-container">
+                                <div class="avatar" style="background-image: url('${avatarUrl}')"></div>
+                            </div>
+                            <div class="profile-details">
+                                <div class="nickname">${nickname}</div>
+                                <div class="handle">${handle}</div>
+                                <div class="bio">${bio}</div>
+                                <div class="info">
+                                    <span>📍 Location: ${location}</span>
+                                    <span>🌐 Website: <a href="${website}" target="_blank">${new URL(website).hostname}</a></span>
+                                    <span>🎖️ Level: ${level}</span>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        profileHtml = `<div class="error-message">Invalid profile data format for domain "${domainInput}" (Expected 7 fields, got ${fields.length})</div>`;
+                    }
+                } else {
+                    profileHtml = `<div class="error-message">No profile data found for domain "${domainInput}"</div>`;
+                }
+                profileCard.innerHTML = profileHtml;
+
+                status.innerText = "";
+                console.log("Search completed successfully");
+            } catch (error) {
+                console.error("Search error:", error);
+                status.innerText = "Search failed: " + (error.message.includes('revert') ? error.message.split('revert')[1]?.trim() || 'Unknown reason' : error.message);
+                results.innerHTML = "";
+                profileCard.innerHTML = "";
+            } finally {
+                searchButton.classList.remove('loading');
+            }
+        }
+
+        function copyToClipboard(text) {
+            const status = document.getElementById('status');
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.opacity = '0';
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                status.innerText = 'Copied to clipboard';
+                console.log(`Copied to clipboard: ${text}`);
+            } catch (error) {
+                console.error('Copy failed:', error);
+                status.innerText = 'Copy failed, please copy manually';
+            } finally {
+                document.body.removeChild(textArea);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('searchButton').addEventListener('click', searchDomain);
+            document.getElementById('domainInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') searchDomain();
+            });
+        });
+    </script>
+</body>
+</html>
